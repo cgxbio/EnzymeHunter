@@ -28,14 +28,14 @@ Architecture and workflow of the EnzymeHunter model：
 
 ## Data and Model Download
 
-Please download the pretrained data and model files from Zenodo:  
-👉 [https://zenodo.org/records/17048211](https://zenodo.org/records/17048211)
+Please download the pretrained data and model files from [Zenodo](https://zenodo.org/records/18598241):  
 
 After downloading, place the contents into the following directories:
 
 ```
 EnzymeHunter/
 ├── data/          # Place dataset files here
+│   └── pdb/       # (PDB mode) Place PDB files here, named {UNIPROT_ID}.pdb
 ├── model/         # Place model files here
 ├── EnzymeHunter.py
 ├── ...
@@ -43,7 +43,7 @@ EnzymeHunter/
 
 ## Usage Example
 
-Here are two common examples of using the  **EnzymeHunter** , corresponding to different running modes:
+Here are the common examples of using the **EnzymeHunter**, corresponding to different running modes:
 
 ### 1. Normal Mode (Default Mode)
 
@@ -73,6 +73,23 @@ Explanation:
 - --The --all_are_enzymes flag forces the program to treat all proteins as enzymes
 - --Skips the enzyme/non-enzyme classification step and proceeds directly to EC number prediction
 - --All proteins will have pred_label set to 1 and pred_prob set to 1.0
+
+### 3. PDB-Based Contact Map Mode
+
+By default, EnzymeHunter uses **ESM2-predicted contact maps**. You can switch to **PDB-based contact maps** (computed from [AlphaFold](https://alphafold.com/download) or [ESMFold](https://github.com/facebookresearch/esm) 3D structures) by setting `--contact_map_source pdb`:
+
+1. Place your PDB structure files (named `{UNIPROT_ID}.pdb`) into `./data/pdb/`
+2. Run the pipeline with `--contact_map_source pdb`:
+
+In this mode, EnzymeHunter will use the model trained with PDB-derived contact maps.
+
+```bash
+# Normal mode with PDB contact maps
+python EnzymeHunter.py --dataset example_test --all_are_enzymes False --contact_map_source pdb
+
+# All-enzymes mode with PDB contact maps
+python EnzymeHunter.py --dataset example_test --all_are_enzymes True --contact_map_source pdb
+```
 
 ## Output
 

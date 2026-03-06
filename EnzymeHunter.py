@@ -16,22 +16,43 @@ from utils import (fasta_to_csv, retrive_esm2_embedding_36_mean,
                   process_fasta_and_save_contact_maps, contactmap_resnet101_rep,
                   combine_esm2_contactmap_rep, csv_to_fasta_test_dataset)
 from infer import use_maxsep_pred_ec_number
+from contact_map_pdb import process_pdb_contact_maps
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
-def prepare_data(test_name):
-    """Prepare data and generate features"""
+def prepare_data(test_name, contact_map_source='esm2'):
+    """Prepare data and generate features."""
     fasta_path = f'./data/datasets/{test_name}.fasta'
     csv_path = f'./data/datasets/{test_name}.csv'
     fasta_to_csv(fasta_path, csv_path)
     retrive_esm2_embedding_36_mean(test_name)
-    process_fasta_and_save_contact_maps(test_name)
-    contactmap_resnet101_rep(test_name)
+
+    if contact_map_source == 'pdb':
+        print("Using PDB-based contact map extraction")
+        print("PDB files should be placed in: ./data/pdb/{UNIPROT_ID}.pdb")
+        process_pdb_contact_maps(
+            fasta_path=fasta_path,
+            pdb_dir='./data/pdb',
+            out_conmap_dir='./data/datasets_process/contactmap_rep/contactmap_8a',
+            out_emb_dir='./data/datasets_process/contactmap_rep/contactmap_resnet101_rep',
+        )
+    else:
+        print("Using ESM2-predicted contact maps")
+        process_fasta_and_save_contact_maps(test_name)
+        contactmap_resnet101_rep(test_name)
+
     combine_esm2_contactmap_rep(test_name)
 
-def predict_enz_nonenz(test_name, model_path='./model/train_model/enz_nonenz_pred_model.pt'):
+def predict_enz_nonenz(test_name, contact_map_source='esm2'):
     """Predict enzyme/non-enzyme classification"""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    if contact_map_source == 'pdb':
+        model_path = './model/train_model/enz_nonenz_pred_model_pdb.pt'
+    else:
+        model_path = './model/train_model/enz_nonenz_pred_model.pt'
+    
+    print(f"Loading enzyme/non-enzyme model: {model_path}")
 
     test_csv_path = f'./data/datasets/{test_name}.csv'
     test_df = pd.read_csv(test_csv_path, sep='\t')
@@ -182,11 +203,19 @@ def combine_maxsep_diamond_tmvec(
     
     return final_test_results
 
-def predict_ec_numbers(test_name):
+def predict_ec_numbers(test_name, contact_map_source='esm2'):
     """Run EC number prediction pipeline"""
     test_enz_name = f'{test_name}_pred_enz'
+    
+    # Select model based on contact map source
+    if contact_map_source == 'pdb':
+        model_name = "ec_number_pred_model_pdb"
+    else:
+        model_name = "ec_number_pred_model"
+    
+    print(f"Loading EC prediction model: {model_name}")
     use_maxsep_pred_ec_number("split100", test_enz_name, 
-                             model_name="ec_number_pred_model")
+                             model_name=model_name)
     
     paths = {
         'test_fasta_path': f'./data/datasets/{test_enz_name}.fasta',
@@ -227,16 +256,28 @@ def merge_final_results(test_name, all_enzymes=False):
     
     return final
 
-def run_prediction_pipeline(test_name, all_enzymes=False):
-    """Main function to run the complete prediction pipeline"""
+def run_prediction_pipeline(test_name, all_enzymes=False, contact_map_source='esm2'):
+    """Main function to run the complete prediction pipeline.
+    
+    Parameters
+    ----------
+    test_name : str
+        Dataset name.
+    all_enzymes : bool
+        If True, skip enzyme/non-enzyme classification.
+    contact_map_source : str
+        'esm2' or 'pdb'. When 'pdb', uses PDB-based contact maps and
+        models trained with PDB features (model files with _pdb suffix).
+    """
     print(f"Starting prediction pipeline for {test_name}")
     print(f"All enzymes mode: {'ON' if all_enzymes else 'OFF'}")
+    print(f"Contact map source: {contact_map_source}")
     print("Preparing data and generating features...")
-    prepare_data(test_name)
+    prepare_data(test_name, contact_map_source=contact_map_source)
     
     if not all_enzymes:
         print("Predicting enzyme/non-enzyme classification...")
-        enz_nonenz_results = predict_enz_nonenz(test_name)
+        enz_nonenz_results = predict_enz_nonenz(test_name, contact_map_source=contact_map_source)
         print("Filtering enzyme subset...")
         enz_subset = prepare_enz_subset(test_name, enz_nonenz_results)
     else:
@@ -250,7 +291,7 @@ def run_prediction_pipeline(test_name, all_enzymes=False):
         enz_subset.to_csv(enz_nonenz_path, sep='\t', index=False)
     
     print("Predicting EC numbers...")
-    ec_results = predict_ec_numbers(test_name)
+    ec_results = predict_ec_numbers(test_name, contact_map_source=contact_map_source)
     
     print("Merging final results...")
     final_results = merge_final_results(test_name, all_enzymes)
@@ -272,8 +313,19 @@ def main():
         default=False,
         help="Set to True if all proteins are known to be enzymes (default: False)"
     )
+    parser.add_argument(
+        "--contact_map_source",
+        type=str,
+        choices=["esm2", "pdb"],
+        default="esm2",
+        help="Source of contact maps: 'esm2' (predicted, default) or 'pdb' (from PDB 3D structures)"
+    )
     args = parser.parse_args()
-    final_results = run_prediction_pipeline(args.dataset, args.all_are_enzymes)
+    final_results = run_prediction_pipeline(
+        args.dataset,
+        args.all_are_enzymes,
+        contact_map_source=args.contact_map_source,
+    )
     print("\nFinal Results:")
     print(final_results.head())
     
