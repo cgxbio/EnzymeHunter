@@ -84,13 +84,7 @@ _uniprot_pat = re.compile(r"\b(?:sp|tr)\|([A-Z0-9]+)\|", re.IGNORECASE)
 
 
 def read_fasta_ids(fp: Path) -> List[str]:
-    """
-    Read unique protein IDs from a FASTA file (order-preserving).
-
-    Supports headers like:
-        >Q2W4C4
-        >sp|P12345|NAME  ...
-    """
+    """Read unique protein IDs from a FASTA file (order-preserving)."""
     ids: List[str] = []
     with fp.open("r", encoding="utf-8", errors="ignore") as f:
         for line in f:
@@ -139,10 +133,7 @@ def load_resnet101(device: str) -> nn.Module:
 
 
 def contactmap_to_3ch_tensor(contact_map: np.ndarray) -> torch.Tensor:
-    """
-    Convert a 2-D contact map to a (1, 3, H, W) float tensor
-    (same 3-channel duplication used in the original pipeline).
-    """
+
     cmap3 = np.array([contact_map, contact_map, contact_map])
     return torch.tensor(cmap3).unsqueeze(0).to(dtype=torch.float32)
 
