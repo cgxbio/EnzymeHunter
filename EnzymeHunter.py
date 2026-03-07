@@ -204,7 +204,7 @@ def combine_maxsep_diamond_tmvec(
     return final_test_results
 
 def predict_ec_numbers(test_name, contact_map_source='esm2'):
-    """Run EC number prediction pipeline"""
+    """Run EC number prediction pipeline."""
     test_enz_name = f'{test_name}_pred_enz'
     
     # Select model based on contact map source
@@ -257,18 +257,7 @@ def merge_final_results(test_name, all_enzymes=False):
     return final
 
 def run_prediction_pipeline(test_name, all_enzymes=False, contact_map_source='esm2'):
-    """Main function to run the complete prediction pipeline.
-    
-    Parameters
-    ----------
-    test_name : str
-        Dataset name.
-    all_enzymes : bool
-        If True, skip enzyme/non-enzyme classification.
-    contact_map_source : str
-        'esm2' or 'pdb'. When 'pdb', uses PDB-based contact maps and
-        models trained with PDB features (model files with _pdb suffix).
-    """
+    """Main function to run the complete prediction pipeline"""
     print(f"Starting prediction pipeline for {test_name}")
     print(f"All enzymes mode: {'ON' if all_enzymes else 'OFF'}")
     print(f"Contact map source: {contact_map_source}")
