@@ -28,7 +28,7 @@ Architecture and workflow of the EnzymeHunter model：
 
 ## Data and Model Download
 
-Please download the pretrained data and model files from [Zenodo](https://zenodo.org/records/18598241):  
+Please download the pretrained data and model files from [Zenodo](https://zenodo.org/records/18896678):  
 
 After downloading, place the contents into the following directories:
 
