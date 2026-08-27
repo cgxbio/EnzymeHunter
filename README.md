@@ -15,7 +15,8 @@ Architecture and workflow of the EnzymeHunter model：
 
 ### 1. Install from PyPI
 
-The project provides a Python API and a command-line entry point. Large pretrained weights and reference databases are distributed separately rather than embedded in the PyPI wheel.
+The project provides both a Python API and a command-line interface for convenient programmatic and command-line use.
+
 
 ```bash
 conda create -n enzymehunter python=3.9 -y
